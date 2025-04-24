@@ -2,36 +2,57 @@
 include("includes/head.html");
 include("includes/menu.php");
 
-if (!isset($_REQUEST['id']) || $_REQUEST['id'] == "") {
+if(!isset($_REQUEST['id']) || $_REQUEST['id']==""){
     header("location: index.php");
     exit;
 }
 ?>
 
 <div class="container">
-    <h3>PRODUCTE:</h3>
-
-    <?php
-    $url = "php/productes.php?id=" . urlencode($_REQUEST['id']);
-    $response = file_get_contents($url);
-    $product = json_decode($response, true);
-
-    if ($product && is_array($product)) {
-        echo "<div class='producte'>";
-        echo "<img src='" . htmlspecialchars($product['image']) . "' alt='Imatge del producte'>";
-        echo "<div class='producte-info'>";
-        echo "<h4>" . htmlspecialchars($product['name']) . "</h4>";
-        echo "<p class='preu'>Preu: $" . htmlspecialchars($product['price']) . "</p>";
-        echo "<p>" . htmlspecialchars($product['descripcio']) . "</p>";
-        echo "<p class='categoria'>Categoria: <a href='veureProductesCategoria.php?categoria=" . urlencode($product['categoria']) . "'>" . htmlspecialchars($product['categoria']) . "</a></p>";
-        echo "<p class='rating'>Puntuació: " . htmlspecialchars($product['rating']) . " (" . htmlspecialchars($product['recuento']) . " valoracions)</p>";
-        echo "</div>";
-        echo "</div>";
-    } else {
-        echo "<p>Error a l'obtenir les dades de l'API.</p>";
-    }
-    ?>
+  <h3 id="titol-categoria">PRODUCTES:</h3>
+  <div id="producte-container"></div>
 </div>
+
+<script>
+  function getParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+  }
+
+  let id = getParam('id');
+  let url = id ? `api/productes.php?id=${id}` : "api/productes.php?id=1";
+
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      const container = document.getElementById("producte-container");
+
+      if (data) {
+        const product = data;
+
+        const div = document.createElement("div");
+        div.className = "producte";
+        div.innerHTML = `
+          <img src="${product.image}" alt="Imatge del producte">
+          <div class="producte-info">
+            <h4>${product.name}</h4>
+            <p class="preu">Preu: $${product.price}</p>
+            <p>${product.descripcio}</p>
+            <p class="categoria">Categoria: <a href="veureProductesCategoria.php?categoria=${encodeURIComponent(product.categoria)}">${product.categoria}</a></p>
+            <p class="rating">Puntuació: ${product.rating} (${product.recuento} valoracions)</p>
+          </div>
+        `;
+        container.appendChild(div);
+      } else {
+        container.innerHTML = "<p>Error al obtenir les dades de l'API.</p>";
+      }
+    })
+    .catch(error => {
+      document.getElementById("producte-container").innerHTML =
+        "<p>Error de connexió a l'API.</p>";
+      console.error(error);
+    });
+</script>
 
 <?php
 include("includes/foot.html");

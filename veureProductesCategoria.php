@@ -1,39 +1,68 @@
 <?php
 include("includes/head.html");
 include("includes/menu.php");
-
-if(!isset($_REQUEST['categoria']) || $_REQUEST['categoria']=="" || $_REQUEST['categoria']=="totes"){
-    $categoria = "totes";
-    $url = "php/productes.php"; 
-} else {
-    $categoria = $_REQUEST['categoria'];
-    $url = "{url de la vostra API}/productes.php?category=" . rawurlencode($categoria);
-}
 ?>
+  <div class="container">
+    <h3 id="titol-categoria">PRODUCTES DE LA CATEGORIA - ...</h3>
+    <div id="llistat-productes" class="llistat-productes"></div>
+  </div>
 
-<div class="container">
-    <h3>PRODUCTES DE LA CATEGORIA - <?php echo ucfirst($categoria); ?>:</h3>
-
-    <?php
-        $response = file_get_contents($url);
-    $data = json_decode($response, true);
-
-        if ($data && is_array($data)) {
-        echo "<div class='llistat-productes'>";
-        foreach ($data as $product) {
-            echo "<div class='producte-mini'>";
-            echo "<img src='" . htmlspecialchars($product['image']) . "' alt='Imatge del producte'>";
-            echo "<div><a href='veureProducte.php?id=" . urlencode($product['id']) . "'>" . htmlspecialchars($product['name']) . "</a></div>";
-            echo "<div class='preu'>$" . htmlspecialchars($product['price']) . "</div>";
-            echo "<div class='rating'>" . htmlspecialchars($product['rating']) . " (" . htmlspecialchars($product['recuento']) . " valoracions)</div>";
-            echo "</div>";
-        }
-        echo "</div>";
-    } else {
-        echo "<p>Error al obtenir les dades de l'API.</p>";
+  <script>
+    function getParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
     }
-    ?>
-</div>
+
+    let categoria = getParam('categoria');
+    let url = "";
+
+    if (!categoria || categoria === "totes") {
+        categoria = "totes";
+        url = "api/productes.php";
+    } else {
+        url = "api/productes.php?category=" + encodeURIComponent(categoria);
+    }
+
+    console.log(url);
+
+    document.getElementById("titol-categoria").innerText =
+      "PRODUCTES DE LA CATEGORIA - " + categoria.charAt(0).toUpperCase() + categoria.slice(1);
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        const container = document.getElementById("llistat-productes");
+
+        if (Array.isArray(data)) {
+          data.forEach(product => {
+            const div = document.createElement("div");
+            div.className = "producte-mini";
+            div.innerHTML = `
+                <img src="${product.image}" alt="Imatge del producte">
+                <div><a href="veureProducte.php?id=${product.id}">${product.name}</a></div>
+                <div class="preu">$${product.price}</div>
+                <div class="rating">${product.rating} (${product.recuento})</div>
+            `;
+            container.appendChild(div);
+          });
+        } else {
+          container.innerHTML = "<p>Error al obtenir les dades de l'API.</p>";
+        }
+      })
+      .catch(error => {
+        document.getElementById("llistat-productes").innerHTML =
+          "<p>Error de connexió a l'API.</p>";
+        console.error(error);
+      });
+
+    fetch("includes/menu.php")
+      .then(res => res.text())
+      .then(html => document.getElementById("menu-container").innerHTML = html);
+
+    fetch("includes/foot.html")
+      .then(res => res.text())
+      .then(html => document.getElementById("footer-container").innerHTML = html);
+  </script>
 
 <?php
 include("includes/foot.html");
